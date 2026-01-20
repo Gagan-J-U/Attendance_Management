@@ -73,17 +73,45 @@ exports.createClassGroup = async (req, res) => {
  */
 exports.getAllClassGroups = async (req, res) => {
   try {
-    const groups = await ClassGroup.find()
-      .populate("classTeacherId", "name email")
-      .populate("defaultClassroomId", "roomNumber");
+    const { role, _id: userId } = req.user;
 
-    return res.status(200).json(groups);
+    // =========================
+    // ADMIN → ALL CLASS GROUPS
+    // =========================
+    if (role === "admin") {
+      const groups = await ClassGroup.find()
+        .populate("classTeacherId", "name email")
+        .populate("defaultClassroomId", "roomNumber");
+
+      return res.status(200).json(groups);
+    }
+
+    // =========================
+    // CLASS TEACHER → OWN GROUPS
+    // =========================
+    if (role === "teacher") {
+      const groups = await ClassGroup.find({
+        classTeacherId: userId
+      })
+        .populate("classTeacherId", "name email")
+        .populate("defaultClassroomId", "roomNumber");
+
+      return res.status(200).json(groups);
+    }
+
+    // =========================
+    // OTHERS → FORBIDDEN
+    // =========================
+    return res.status(403).json({
+      message: "Access denied"
+    });
 
   } catch (err) {
-    console.error("Get class groups error:", err);
+    console.error("Get all class groups error:", err);
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 /**
  * GET CLASS GROUP BY ID
@@ -94,7 +122,8 @@ exports.getClassGroupById = async (req, res) => {
 
     const group = await ClassGroup.findById(id)
       .populate("classTeacherId", "name email")
-      .populate("defaultClassroomId", "roomNumber");
+      .populate("defaultClassroomId", "roomNumber")
+      .populate("students", "name usn email");
 
     if (!group) {
       return res.status(404).json({
@@ -118,6 +147,17 @@ exports.assignClassTeacher = async (req, res) => {
     const { id } = req.params;
     const { classTeacherId } = req.body;
 
+    const classGroup = await ClassGroup.findById(id);
+    if (!classGroup) {
+      return res.status(404).json({ message: "Class group not found" });
+    }
+
+    if (!classGroup.isActive) {
+      return res.status(403).json({
+        message: "Cannot modify inactive class group"
+      });
+    }
+
     const teacher = await User.findOne({
       _id: classTeacherId,
       role: "teacher",
@@ -125,22 +165,11 @@ exports.assignClassTeacher = async (req, res) => {
     });
 
     if (!teacher) {
-      return res.status(400).json({
-        message: "Invalid teacher"
-      });
+      return res.status(400).json({ message: "Invalid teacher" });
     }
 
-    const updated = await ClassGroup.findByIdAndUpdate(
-      id,
-      { classTeacherId },
-      { new: true }
-    );
-
-    if (!updated) {
-      return res.status(404).json({
-        message: "Class group not found"
-      });
-    }
+    classGroup.classTeacherId = classTeacherId;
+    await classGroup.save();
 
     return res.status(200).json({
       message: "Class teacher assigned successfully"
@@ -151,6 +180,7 @@ exports.assignClassTeacher = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 /**
  * ACTIVATE / DEACTIVATE CLASS GROUP
@@ -184,6 +214,83 @@ exports.updateClassGroupStatus = async (req, res) => {
 
   } catch (err) {
     console.error("Update class group status error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+exports.addStudentToClassGroup = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { studentId } = req.body;
+
+    const classGroup = await ClassGroup.findById(id);
+    if (!classGroup) {
+      return res.status(404).json({ message: "Class group not found" });
+    }
+
+    if (!classGroup.isActive) {
+      return res.status(403).json({
+        message: "Cannot modify inactive class group"
+      });
+    }
+
+    const student = await User.findOne({
+      _id: studentId,
+      role: "student",
+      isActive: true
+    });
+
+    if (!student) {
+      return res.status(400).json({ message: "Invalid student" });
+    }
+
+    if (classGroup.students.includes(studentId)) {
+      return res.status(409).json({
+        message: "Student already in class group"
+      });
+    }
+
+    classGroup.students.push(studentId);
+    await classGroup.save();
+
+    return res.status(200).json({
+      message: "Student added to class group"
+    });
+
+  } catch (err) {
+    console.error("Add student error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.removeStudentFromClassGroup = async (req, res) => {
+  try {
+    const { id, studentId } = req.params;
+
+    const classGroup = await ClassGroup.findById(id);
+    if (!classGroup) {
+      return res.status(404).json({ message: "Class group not found" });
+    }
+
+    if (!classGroup.isActive) {
+      return res.status(403).json({
+        message: "Cannot modify inactive class group"
+      });
+    }
+
+    classGroup.students = classGroup.students.filter(
+      s => s.toString() !== studentId
+    );
+
+    await classGroup.save();
+
+    return res.status(200).json({
+      message: "Student removed from class group"
+    });
+
+  } catch (err) {
+    console.error("Remove student error:", err);
     return res.status(500).json({ message: "Server error" });
   }
 };

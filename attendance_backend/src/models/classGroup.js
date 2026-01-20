@@ -4,35 +4,35 @@ const classGroupSchema = new mongoose.Schema(
   {
     department: {
       type: String,
-      required: true,
-      trim: true
+      required: true
     },
 
     semester: {
       type: Number,
-      required: true,
-      min: 1
+      required: true
     },
 
     section: {
       type: String,
-      required: true,
-      trim: true
+      required: true
     },
 
     academicYear: {
       type: String,
-      required: true // e.g. "2025-26"
+      required: true
     },
+
+    students: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+      }
+    ],
 
     classTeacherId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User"
-    },
-
-    defaultClassroomId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Classroom"
+      ref: "User",
+      default: null
     },
 
     isActive: {
@@ -42,6 +42,7 @@ const classGroupSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
 
 // 🔒 Prevent duplicate class groups in same academic year
 classGroupSchema.index(
@@ -53,5 +54,6 @@ classGroupSchema.index(
   },
   { unique: true }
 );
+classGroupSchema.index({ students: 1 });
 
 module.exports = mongoose.model("ClassGroup", classGroupSchema);

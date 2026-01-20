@@ -5,27 +5,26 @@ const adminOnly = role("admin");
 
 const {
   createClassGroup,
-  getClassGroups,
+  getAllClassGroups,
   getClassGroupById,
   assignClassTeacher,
   updateClassGroupStatus
+  ,addStudentToClassGroup,
+  removeStudentFromClassGroup
 } = require("../controllers/classGroup.controller");
 
 router.use(auth);
 
 // list class groups (role-aware)
-router.get("/", getClassGroups);
-
-// create class group
 router.post("/", adminOnly, createClassGroup);
-
-// detailed view
+router.get("/", getAllClassGroups);
 router.get("/:id", getClassGroupById);
 
-// assign / change class teacher
-router.patch("/:id/class-teacher", adminOnly, assignClassTeacher);
-
-// activate / deactivate
+router.patch("/:id/teacher", adminOnly, assignClassTeacher);
 router.patch("/:id/status", adminOnly, updateClassGroupStatus);
+
+router.post("/:id/students", adminOnly, addStudentToClassGroup);
+router.delete("/:id/students/:studentId", adminOnly, removeStudentFromClassGroup);
+
 
 module.exports = router;
