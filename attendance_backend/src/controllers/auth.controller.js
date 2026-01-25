@@ -25,13 +25,16 @@ exports.login = async (req, res) => {
     );
 
     res.status(200).json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        role: user.role
-      }
-    });
+  token,
+  expiresIn: 7 * 24 * 60 * 60, // seconds
+  user: {
+    id: user._id,
+    name: user.name,
+    email: user.email,   // 👈 useful for UI
+    role: user.role
+  }
+});
+
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
