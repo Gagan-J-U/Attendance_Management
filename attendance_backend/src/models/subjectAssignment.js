@@ -14,6 +14,18 @@ const subjectAssignmentSchema = new mongoose.Schema(
       required: true
     },
 
+    teacherId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+
+    subjectAssignmentType: {
+      type: String,
+      enum: ["theory", "lab", "project"],
+      required: true
+    },
+
     offeringType: {
       type: String,
       enum: ["regular", "elective", "open-elective"],

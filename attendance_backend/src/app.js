@@ -8,6 +8,7 @@ const timeSlotRoutes = require("./routes/timeSlot.routes");
 const classroomRoutes = require("./routes/classroom.routes");
 const classGroupRoutes = require("./routes/classGroup.routes");
 const subjectAssignmentRoutes = require("./routes/subjectAssignment.routes");
+const timetableRoutes = require("./routes/timetable.routes");
 
 const connectDB = require("./config/db");
 
@@ -25,6 +26,13 @@ app.use("/api/timeslots", timeSlotRoutes);
 app.use("/api/classrooms", classroomRoutes);
 app.use("/api/classgroups", classGroupRoutes);
 app.use("/api/subject-assignments", subjectAssignmentRoutes);
+app.use("/api/timetable", timetableRoutes);
+app.use("/api/exams", require("./routes/exam.routes"));
+app.use("/api/exchange", require("./routes/exchange.routes"));
+app.use("/api/attendance", require("./routes/attendance.routes"));
+app.use("/api/notes", require("./routes/notes.routes"));
+app.use("/api/chat", require("./routes/chat.routes"));
+app.use("/api/mentorship", require("./routes/mentorship.routes"));
 
 app.get("/", (req, res) => {
   res.send("Attendance Backend Running");

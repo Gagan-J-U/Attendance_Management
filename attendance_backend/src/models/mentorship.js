@@ -19,6 +19,11 @@ const mentorshipSchema = new mongoose.Schema(
       required: true // 2025-26
     },
 
+    semester: {
+      type: Number,
+      required: true
+    },
+
     isActive: {
       type: Boolean,
       default: true
@@ -34,7 +39,8 @@ mentorshipSchema.index(
   {
     mentorId: 1,
     studentId: 1,
-    academicYear: 1
+    academicYear: 1,
+    semester: 1
   },
   { unique: true }
 );

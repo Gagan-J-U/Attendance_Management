@@ -92,35 +92,7 @@ exports.updateTeacherStatus=async(req,res)=>{
   }
 };
 
-exports.updateFingerprint=async(req,res)=>{
-  try{
-    const {id}=req.params;
-    const {fingerprintData}=req.body;
 
-    if(!fingerprintData){
-      return res.status(400).json({message:"Missing fingerprint data"});
-    }
-
-    const teacher=await user.findOneAndUpdate(
-      {_id:id,role:"teacher"},
-      {"teacherInfo.fingerprintData":fingerprintData},
-      {new:true}
-    );
-
-    if(!teacher){
-      return res.status(404).json({message:"Teacher not found"});
-    }
-
-    return res.status(200).json({
-      message:"Teacher fingerprint updated successfully",
-      teacher
-    });
-  }
-  catch(err){
-    console.error("Update teacher fingerprint error:",err);
-    return res.status(500).json({message:"Server error"});
-  }
-};
 
 exports.updateTeacherProfile=async(req,res)=>{
   try{

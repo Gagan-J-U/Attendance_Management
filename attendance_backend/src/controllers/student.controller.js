@@ -130,38 +130,7 @@ exports.updateStudentStatus = async (req, res) => {
   }
 };
 
-/**
- * STUDENT (self): Register / Update fingerprint
- */
-exports.updateFingerprint = async (req, res) => {
-  try {
-    const studentId = req.user.userId;
-    const { fingerprintId } = req.body;
 
-    if (!fingerprintId) {
-      return res.status(400).json({
-        message: "Fingerprint ID is required"
-      });
-    }
-
-    const student = await User.findOneAndUpdate(
-      { _id: studentId, role: "student" },
-      {
-        "studentInfo.fingerprintId": fingerprintId,
-        "studentInfo.fingerprintRegistered": true
-      },
-      { new: true }
-    ).select("-password");
-
-    return res.status(200).json({
-      message: "Fingerprint registered successfully"
-    });
-
-  } catch (err) {
-    console.error("Fingerprint update error:", err);
-    return res.status(500).json({ message: "Server error" });
-  }
-};
 
 
 

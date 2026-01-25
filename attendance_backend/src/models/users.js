@@ -6,16 +6,12 @@ const studentInfoSchema = new mongoose.Schema({
   rollNo: { type: String, required: true },
   department: { type: String, required: true },
   semester: { type: Number, required: true },
-  section: { type: String, required: true },
-  fingerprintId: { type: String },
-  fingerprintRegistered: { type: Boolean, default: false }
+  section: { type: String, required: true }
 }, { _id: false });
 
 const teacherInfoSchema = new mongoose.Schema({
   employeeId: { type: String, required: true },
-  department: { type: String, required: true },
-  fingerprintId: { type: String },
-  fingerprintRegistered: { type: Boolean, default: false }
+  department: { type: String, required: true }
 }, { _id: false });
 
 const adminInfoSchema = new mongoose.Schema({

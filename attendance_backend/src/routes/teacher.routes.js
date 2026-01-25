@@ -4,21 +4,19 @@ const role = require("../middlewares/role.middleware");
 
 const adminOnly = role("admin");
 const teacherOnly = role("teacher");
-const adminTeacherOnly = role(["admin", "teacher"]);
+const adminTeacherOnly = role("admin", "teacher");
 
 const {
   createTeacher,
   getAllTeachers,
   getTeacherById,
   updateTeacherStatus,
-  updateFingerprint,
   updateTeacherProfile
 } = require("../controllers/teacher.controller");
 
 router.use(auth);
 
-// teacher self actions (must come first)
-router.patch("/me/fingerprint", teacherOnly, updateFingerprint);
+
 
 // admin actions
 router.post("/", adminOnly, createTeacher);

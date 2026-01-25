@@ -2,6 +2,8 @@ const SubjectAssignment = require("../models/subjectAssignment");
 const Subject = require("../models/subject");
 const ClassGroup = require("../models/classGroup");
 const User = require("../models/users");
+const AttendanceAggregationService =
+  require("../services/attendanceAggregation.service");
 
 
 exports.getSubjectAssignments = async (req, res) => {
@@ -26,7 +28,7 @@ exports.getSubjectAssignments = async (req, res) => {
     // admin → no filter
 
     const assignments = await SubjectAssignment.find(query)
-      .populate("subjectId", "name code credits")
+      .populate("subjectId", "subjectName subjectCode credits")
       .populate("classGroupId", "department semester section academicYear")
       .populate("teacherId", "name email");
 
@@ -45,7 +47,7 @@ exports.getSubjectAssignmentDetails = async (req, res) => {
 
     const assignment = await SubjectAssignment.findById(id)
       .populate("subjectId", "name code")
-      .populate("classGroupId", "department semester section academicYear students")
+      .populate("classGroupId", "department semester section students")
       .populate("teacherId", "name email");
 
     if (!assignment) {
@@ -56,37 +58,46 @@ exports.getSubjectAssignmentDetails = async (req, res) => {
     // STUDENT VIEW
     // =========================
     if (role === "student") {
-      if (!assignment.classGroupId.students.includes(userId)) {
+      const isStudentInGroup = assignment.classGroupId.students
+        .map(s => s.toString())
+        .includes(userId.toString());
+
+      if (!isStudentInGroup) {
         return res.status(403).json({ message: "Access denied" });
       }
 
+
       // fetch student's attendance (aggregation later)
-      return res.status(200).json({
+      const attendance =
+      await AttendanceAggregationService.getStudentAttendanceDetails(
+        userId,
+        assignment._id
+      );
+
+    return res.status(200).json({
         subject: assignment.subjectId,
         classGroup: assignment.classGroupId,
         teacher: assignment.teacherId,
-        attendance: {
-          totalClasses: 0,
-          present: 0,
-          percentage: 0
-        }
+        students: assignment.classGroupId.students,
+      attendance
       });
     }
 
     // =========================
     // TEACHER / ADMIN VIEW
     // =========================
-    if (role === "teacher" || role === "admin") {
-      return res.status(200).json({
-        subject: assignment.subjectId,
-        classGroup: assignment.classGroupId,
-        teacher: assignment.teacherId,
-        students: assignment.classGroupId.students,
-        attendanceSummary: [] // computed later
-      });
-    }
+    const attendanceSummary =
+  await AttendanceAggregationService.getTeacherAttendanceSummary(
+    assignment._id
+  );
 
-    return res.status(403).json({ message: "Access denied" });
+    return res.status(200).json({
+      subject: assignment.subjectId,
+      classGroup: assignment.classGroupId,
+      teacher: assignment.teacherId,
+      students: assignment.classGroupId.students,
+      attendanceSummary
+    });
 
   } catch (err) {
     console.error("Get subject assignment details error:", err);
@@ -151,6 +162,7 @@ exports.createSubjectAssignment = async (req, res) => {
       classGroupId,
       teacherId,
       subjectAssignmentType,
+      academicYear,
       isActive: true
     });
 
