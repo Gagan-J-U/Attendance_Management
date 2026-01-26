@@ -1,9 +1,13 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
-import 'package:my_app/services/auth/auth_user.dart';
+import 'package:college_management/auth/auth_user.dart';
 
 abstract class AuthState {
   const AuthState();
+}
+
+class AuthStateUninitialized extends AuthState {
+  const AuthStateUninitialized();
 }
 
 class AuthStateLoggedOut extends AuthState {
@@ -25,7 +29,18 @@ class AuthStateForgotPassword extends AuthState {
 }
 
 class AuthStateVerifyOTP extends AuthState {
-  const AuthStateVerifyOTP();
+  final String email;
+  const AuthStateVerifyOTP(this.email);
+}
+
+class AuthStateOtpVerified extends AuthState {
+  final String email;
+  final String otp;
+  const AuthStateOtpVerified(this.email, this.otp);
+}
+
+class AuthStateResetPasswordSuccess extends AuthState {
+  const AuthStateResetPasswordSuccess();
 }
 
 class AuthStateLoading extends AuthState {

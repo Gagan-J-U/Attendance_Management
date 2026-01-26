@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../auth/bloc/auth_bloc.dart';
+import '../auth/bloc/auth_state.dart';
 
 
 
@@ -18,25 +20,32 @@ class RoleRouter extends StatelessWidget {
 
         final role = state.user.role;
 
-        switch (role) {
-          case "student":
-            return BlocProvider(
-              create: (_) => StudentBloc(),
-              child: const StudentHomeView(),
-            );
+        // TODO: Implement role-based routing
+        return Scaffold(
+          body: Center(
+            child: Text('Logged in as $role'),
+          ),
+        );
 
-          case "teacher":
-            return BlocProvider(
-              create: (_) => TeacherBloc(),
-              child: const TeacherHomeView(),
-            );
+        // switch (role) {
+        //   case "student":
+        //     return BlocProvider(
+        //       create: (_) => StudentBloc(),
+        //       child: const StudentHomeView(),
+        //     );
 
-          default:
-            return const Scaffold(
-              body: Center(child: Text("Unknown role")),
-            );
-        }
+        //   case "teacher":
+        //     return BlocProvider(
+        //       create: (_) => TeacherBloc(),
+        //       child: const TeacherHomeView(),
+        //     );
+
+        //   default:
+        //     return const Scaffold(
+        //       body: Center(child: Text("Unknown role")),
+        //     );
+        // }
       },
-    );
+  );
   }
 }

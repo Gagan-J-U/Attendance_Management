@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../auth/bloc/auth_bloc.dart';
+import '../../auth/bloc/auth_event.dart';
 import 'auth_register_view.dart';
 import 'auth_forgot_password_view.dart';
 
@@ -98,11 +101,10 @@ class _LoginViewState extends State<LoginView> {
                   ElevatedButton(
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
-                        final email = _emailController.text.trim();
-                        final password = _passwordController.text;
-
-                        // TODO: call your bloc/provider login here
-                        print("Login with $email $password");
+                        context.read<AuthBloc>().add(AuthEventLogin(
+                          _emailController.text.trim(),
+                          _passwordController.text,
+                        ));
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -115,23 +117,13 @@ class _LoginViewState extends State<LoginView> {
 
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ForgotPasswordView(),
-                        ),
-                      );
+                      context.read<AuthBloc>().add(const AuthEventShouldForgotPassword());
                     },
                     child: const Text("Forgot password?"),
                   ),
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const RegisterView(),
-                        ),
-                      );
+                      context.read<AuthBloc>().add(const AuthEventShouldRegister());
                     },
                     child: const Text("Don't have an account? Register"),
                   ),

@@ -8,17 +8,61 @@ class AuthEventInitialize extends AuthEvent {
 }
 
 class AuthEventLogin extends AuthEvent {
-  const AuthEventLogin();
+  final String email;
+  final String password;
+  const AuthEventLogin(this.email, this.password);
 }
 
 class AuthEventRegister extends AuthEvent {
-  const AuthEventRegister();
+  final String name;
+  final String email;
+  final String password;
+  final String? phoneNumber;
+  final String role;
+  final Map<String, dynamic>? studentInfo;
+  final Map<String, dynamic>? teacherInfo;
+  
+  const AuthEventRegister({
+    required this.name,
+    required this.email,
+    required this.password,
+    this.phoneNumber,
+    required this.role,
+    this.studentInfo,
+    this.teacherInfo,
+  });
 }
 
 class AuthEventForgotPassword extends AuthEvent {
-  const AuthEventForgotPassword();
+  final String email;
+  const AuthEventForgotPassword(this.email);
 }
 
 class AuthEventVerifyOTP extends AuthEvent {
-  const AuthEventVerifyOTP();
+  final String email;
+  final String otp;
+  const AuthEventVerifyOTP(this.email, this.otp);
+}
+
+class AuthEventResetPassword extends AuthEvent {
+  final String email;
+  final String otp;
+  final String newPassword;
+  const AuthEventResetPassword({
+    required this.email,
+    required this.otp,
+    required this.newPassword,
+  });
+}
+
+class AuthEventShouldRegister extends AuthEvent {
+  const AuthEventShouldRegister();
+}
+
+class AuthEventShouldForgotPassword extends AuthEvent {
+  const AuthEventShouldForgotPassword();
+}
+
+class AuthEventLogOut extends AuthEvent {
+  const AuthEventLogOut();
 }
