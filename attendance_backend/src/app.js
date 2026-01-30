@@ -16,6 +16,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 connectDB();
 
 app.use("/api/auth", authRoutes);
@@ -33,6 +34,8 @@ app.use("/api/attendance", require("./routes/attendance.routes"));
 app.use("/api/notes", require("./routes/notes.routes"));
 app.use("/api/chat", require("./routes/chat.routes"));
 app.use("/api/mentorship", require("./routes/mentorship.routes"));
+app.use("/api/teacher-attendance", require("./routes/teacherAttendance.routes"));
+app.use("/api/bulk", require("./routes/bulk.routes"));
 
 app.get("/", (req, res) => {
   res.send("Attendance Backend Running");

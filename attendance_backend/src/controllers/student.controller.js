@@ -53,10 +53,20 @@ exports.createStudent = async (req, res) => {
  */
 exports.getAllStudents = async (req, res) => {
   try {
-    const students = await User.find({
-      role: "student",
-      isActive: true
-    }).select("-password");
+    const { rollNoFrom, rollNoTo, department, semester, section } = req.query;
+    let query = { role: "student", isActive: true };
+
+    if (department) query["studentInfo.department"] = department;
+    if (semester) query["studentInfo.semester"] = Number(semester);
+    if (section) query["studentInfo.section"] = section;
+
+    if (rollNoFrom || rollNoTo) {
+        query["studentInfo.rollNo"] = {};
+        if (rollNoFrom) query["studentInfo.rollNo"].$gte = rollNoFrom;
+        if (rollNoTo) query["studentInfo.rollNo"].$lte = rollNoTo;
+    }
+
+    const students = await User.find(query).select("-password").sort({ "studentInfo.rollNo": 1 });
 
     return res.status(200).json(students);
 

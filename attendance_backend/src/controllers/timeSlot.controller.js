@@ -5,11 +5,11 @@ const TimeSlot = require("../models/timeSlot");
  */
 exports.createTimeSlot = async (req, res) => {
   try {
-    const { name, startTime, endTime } = req.body;
+    const { slotName, startTime, endTime } = req.body;
 
-    if (!name || !startTime || !endTime) {
+    if (!slotName || !startTime || !endTime) {
       return res.status(400).json({
-        message: "Name, startTime and endTime are required"
+        message: "slotName, startTime and endTime are required"
       });
     }
 
@@ -33,7 +33,7 @@ exports.createTimeSlot = async (req, res) => {
     }
 
     await TimeSlot.create({
-      name,
+      slotName,
       startTime,
       endTime
     });
@@ -71,7 +71,7 @@ exports.getAllTimeSlots = async (req, res) => {
 exports.updateTimeSlot = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, startTime, endTime } = req.body;
+    const { slotName, startTime, endTime } = req.body;
 
     if (startTime && endTime && startTime >= endTime) {
       return res.status(400).json({
@@ -97,7 +97,7 @@ exports.updateTimeSlot = async (req, res) => {
 
     const updatedSlot = await TimeSlot.findByIdAndUpdate(
       id,
-      { name, startTime, endTime },
+      { slotName, startTime, endTime },
       { new: true, runValidators: true }
     );
 

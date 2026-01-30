@@ -22,13 +22,13 @@ const subjectAssignmentSchema = new mongoose.Schema(
 
     subjectAssignmentType: {
       type: String,
-      enum: ["theory", "lab", "project"],
+      enum: ["THEORY", "LAB", "TUTORIAL"],
       required: true
     },
 
     offeringType: {
       type: String,
-      enum: ["regular", "elective", "open-elective"],
+      enum: ["REGULAR", "REMEDIAL", "HONORS"],
       required: true
     },
 

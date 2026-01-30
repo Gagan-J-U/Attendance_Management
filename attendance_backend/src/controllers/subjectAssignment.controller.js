@@ -13,6 +13,7 @@ exports.getSubjectAssignments = async (req, res) => {
 
     if (role === "teacher") {
       query.teacherId = userId;
+      query.isActive = true;
     }
 
     if (role === "student") {
@@ -23,13 +24,14 @@ exports.getSubjectAssignments = async (req, res) => {
       query.classGroupId = {
         $in: classGroups.map(cg => cg._id)
       };
+      query.isActive = true;
     }
 
     // admin → no filter
 
     const assignments = await SubjectAssignment.find(query)
       .populate("subjectId", "subjectName subjectCode credits")
-      .populate("classGroupId", "department semester section academicYear")
+      .populate("classGroupId", "department semester section academicYear students")
       .populate("teacherId", "name email");
 
     return res.status(200).json(assignments);
@@ -46,8 +48,15 @@ exports.getSubjectAssignmentDetails = async (req, res) => {
     const { role, _id: userId } = req.user;
 
     const assignment = await SubjectAssignment.findById(id)
-      .populate("subjectId", "name code")
-      .populate("classGroupId", "department semester section students")
+      .populate("subjectId", "subjectName subjectCode")
+      .populate({
+        path: "classGroupId",
+        select: "department semester section students",
+        populate: {
+          path: "students",
+          select: "name email rollNumber profilePicture"
+        }
+      })
       .populate("teacherId", "name email");
 
     if (!assignment) {
@@ -93,7 +102,7 @@ exports.getSubjectAssignmentDetails = async (req, res) => {
 
     return res.status(200).json({
       subject: assignment.subjectId,
-      classGroup: assignment.classGroupId,
+      classGroupId: assignment.classGroupId,
       teacher: assignment.teacherId,
       students: assignment.classGroupId.students,
       attendanceSummary
@@ -228,4 +237,17 @@ exports.updateSubjectAssignmentStatus = async (req, res) => {
     console.error("Update subject assignment status error:", err);
     return res.status(500).json({ message: "Server error" });
   }
+};
+
+exports.getSubjectAssignmentsByClass = async (req, res) => {
+    try {
+        const { classGroupId } = req.params;
+        const assignments = await SubjectAssignment.find({ classGroupId, isActive: true })
+            .populate("subjectId", "subjectName subjectCode")
+            .populate("teacherId", "name email");
+        return res.status(200).json(assignments);
+    } catch (err) {
+        console.error("Get assignments by class error:", err);
+        return res.status(500).json({ message: "Server error" });
+    }
 };

@@ -12,7 +12,6 @@ exports.createClassGroup = async (req, res) => {
       section,
       academicYear,
       classTeacherId,
-      defaultClassroomId
     } = req.body;
 
     if (!department || !semester || !section || !academicYear) {
@@ -55,7 +54,6 @@ exports.createClassGroup = async (req, res) => {
       section,
       academicYear,
       classTeacherId,
-      defaultClassroomId
     });
 
     return res.status(201).json({
@@ -80,8 +78,7 @@ exports.getAllClassGroups = async (req, res) => {
     // =========================
     if (role === "admin") {
       const groups = await ClassGroup.find()
-        .populate("classTeacherId", "name email")
-        .populate("defaultClassroomId", "roomNumber");
+        .populate("classTeacherId", "name email");
 
       return res.status(200).json(groups);
     }
@@ -93,8 +90,7 @@ exports.getAllClassGroups = async (req, res) => {
       const groups = await ClassGroup.find({
         classTeacherId: userId
       })
-        .populate("classTeacherId", "name email")
-        .populate("defaultClassroomId", "roomNumber");
+        .populate("classTeacherId", "name email");
 
       return res.status(200).json(groups);
     }
@@ -122,7 +118,6 @@ exports.getClassGroupById = async (req, res) => {
 
     const group = await ClassGroup.findById(id)
       .populate("classTeacherId", "name email")
-      .populate("defaultClassroomId", "roomNumber")
       .populate("students", "name usn email");
 
     if (!group) {

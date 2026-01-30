@@ -53,3 +53,52 @@ exports.createExam = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+/**
+ * Get All Exams (Admin)
+ * GET /api/exams
+ */
+exports.getAllExams = async (req, res) => {
+    try {
+        const { startDate, endDate, classGroupId } = req.query;
+        let query = { isActive: true };
+
+        if (startDate && endDate) {
+            query.date = { 
+                $gte: new Date(startDate), 
+                $lte: new Date(endDate) 
+            };
+        }
+
+        if (classGroupId) {
+            query["allocations.classGroupId"] = classGroupId;
+        }
+
+        const exams = await ExamSchedule.find(query)
+            .populate("allocations.classGroupId", "department semester section")
+            .populate("allocations.classroomNumber", "roomName block")
+            .populate("invigilators.teacherId", "name email")
+            .populate("invigilators.classroomNumber", "roomName block text")
+            .sort({ date: 1, startTime: 1 });
+
+        res.status(200).json(exams);
+    } catch (error) {
+        console.error("Get exams error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+/**
+ * Delete/Deactivate Exam
+ * DELETE /api/exams/:id
+ */
+exports.deleteExam = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const exam = await ExamSchedule.findByIdAndUpdate(id, { isActive: false }, { new: true });
+        if (!exam) return res.status(404).json({ message: "Exam not found" });
+        res.status(200).json({ message: "Exam deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

@@ -11,59 +11,73 @@ exports.getStudentAttendanceDetails = async (
   studentId,
   subjectAssignmentId
 ) => {
-  const records = await AttendanceRecord.aggregate([
-    {
-      $match: {
-        studentId: new mongoose.Types.ObjectId(studentId)
-      }
-    },
-    {
-      $lookup: {
-        from: "attendancesessions",
-        localField: "attendanceSessionId",
-        foreignField: "_id",
-        as: "session"
-      }
-    },
-    { $unwind: "$session" },
-    {
-      $match: {
-        "session.subjectAssignmentId": new mongoose.Types.ObjectId(
-          subjectAssignmentId
-        )
-      }
-    },
+  // 1. Find all sessions held for this subject
+  const sessions = await AttendanceSession.aggregate([
     {
       $lookup: {
         from: "timetables",
-        localField: "session.timetableId",
+        localField: "timetableId",
         foreignField: "_id",
         as: "timetable"
       }
     },
-    { $unwind: "$timetable" }
+    { $unwind: "$timetable" },
+    {
+      $match: {
+        "timetable.subjectAssignmentId": new mongoose.Types.ObjectId(subjectAssignmentId)
+      }
+    },
+    {
+      $lookup: {
+        from: "attendancerecords",
+        let: { sessionId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$attendanceSessionId", "$$sessionId"] },
+                  { $eq: ["$studentId", new mongoose.Types.ObjectId(studentId)] }
+                ]
+              }
+            }
+          }
+        ],
+        as: "record"
+      }
+    },
+    { $addFields: { record: { $arrayElemAt: ["$record", 0] } } },
+    {
+      $lookup: {
+        from: "timeslots",
+        localField: "timetable.timeSlotId",
+        foreignField: "_id",
+        as: "timeSlot"
+      }
+    },
+    { $unwind: "$timeSlot" },
+    { $sort: { date: -1, "timeSlot.startTime": -1 } }
   ]);
 
-  const totalClasses = records.length;
-  const present = records.filter(r => r.status === "present").length;
-  const absent = records.filter(r => r.status === "absent").length;
+  const totalClasses = sessions.length;
+  // If record exists, use status. If not, and session is locked, it's 'absent'.
+  // (Assuming system auto-marks, but this is a fallback)
+  const present = sessions.filter(s => s.record && s.record.status === "present").length;
+  const absent = sessions.filter(s => s.record && s.record.status === "absent").length;
 
   return {
     summary: {
       totalClasses,
       present,
       absent,
-      percentage:
-        totalClasses === 0
-          ? 0
-          : Number(((present / totalClasses) * 100).toFixed(2))
+      percentage: totalClasses === 0 ? 0 : Number(((present / totalClasses) * 100).toFixed(2))
     },
-    records: records.map(r => ({
-      attendanceRecordId: r._id,
-      date: r.session.date,
-      dayOfWeek: r.timetable.dayOfWeek,
-      timeSlot: r.timetable.timeSlotId, // frontend can map slot
-      status: r.status
+    records: sessions.map(s => ({
+      attendanceSessionId: s._id,
+      date: s.date,
+      dayOfWeek: s.timetable.dayOfWeek,
+      timeSlot: s.timeSlot,
+      status: s.record ? s.record.status : (s.isLocked ? "absent" : "pending")
     }))
   };
 };
@@ -72,6 +86,27 @@ exports.getStudentAttendanceDetails = async (
  * TEACHER → summary per student for ONE subject
  */
 exports.getTeacherAttendanceSummary = async (subjectAssignmentId) => {
+  // 1. Get the list of all sessions for this assignment to know the "total classes" constant
+  const sessions = await AttendanceSession.aggregate([
+    {
+       $lookup: {
+         from: "timetables",
+         localField: "timetableId",
+         foreignField: "_id",
+         as: "timetable"
+       }
+    },
+    { $unwind: "$timetable" },
+    {
+      $match: {
+        "timetable.subjectAssignmentId": new mongoose.Types.ObjectId(subjectAssignmentId)
+      }
+    }
+  ]);
+
+  const totalSessionsHeld = sessions.length;
+
+  // 2. Aggregate records for these sessions
   const summary = await AttendanceRecord.aggregate([
     {
       $lookup: {
@@ -83,19 +118,30 @@ exports.getTeacherAttendanceSummary = async (subjectAssignmentId) => {
     },
     { $unwind: "$session" },
     {
+      $lookup: {
+        from: "timetables",
+        localField: "session.timetableId",
+        foreignField: "_id",
+        as: "timetable"
+      }
+    },
+    { $unwind: "$timetable" },
+    {
       $match: {
-        "session.subjectAssignmentId": new mongoose.Types.ObjectId(
-          subjectAssignmentId
-        )
+        "timetable.subjectAssignmentId": new mongoose.Types.ObjectId(subjectAssignmentId)
       }
     },
     {
       $group: {
         _id: "$studentId",
-        totalClasses: { $sum: 1 },
-        present: {
+        presentCount: {
           $sum: {
-            $cond: [{ $eq: ["$status", "present"] }, 1, 0]
+            $cond: [{ $in: ["$status", ["present", "late"]] }, 1, 0]
+          }
+        },
+        absentCount: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "absent"] }, 1, 0]
           }
         }
       }
@@ -103,18 +149,16 @@ exports.getTeacherAttendanceSummary = async (subjectAssignmentId) => {
     {
       $project: {
         studentId: "$_id",
-        totalClasses: 1,
-        present: 1,
-        absent: {
-          $subtract: ["$totalClasses", "$present"]
-        },
+        present: "$presentCount",
+        absent: "$absentCount",
+        totalClasses: { $literal: totalSessionsHeld },
         percentage: {
           $cond: [
-            { $eq: ["$totalClasses", 0] },
+            { $eq: [totalSessionsHeld, 0] },
             0,
             {
               $multiply: [
-                { $divide: ["$present", "$totalClasses"] },
+                { $divide: ["$presentCount", totalSessionsHeld] },
                 100
               ]
             }

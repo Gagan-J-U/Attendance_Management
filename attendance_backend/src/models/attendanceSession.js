@@ -8,6 +8,11 @@ const attendanceSessionSchema = new mongoose.Schema(
       required: true
     },
 
+    date: {
+      type: Date,
+      required: true
+    },
+
     takenBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", // teacher / substitute
